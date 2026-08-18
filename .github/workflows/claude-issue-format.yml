@@ -1,0 +1,93 @@
+name: Format Issues
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write
+
+concurrency:
+  group: issue-format-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  format-issue:
+    if: >-
+      !endsWith(github.event.sender.login, '[bot]') &&
+      github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*),Read,Glob,Grep"'
+          prompt: |
+            Estás formateando el issue #${{ github.event.issue.number }} del repositorio ${{ github.repository }}.
+
+            1. Lee el issue completo:
+               gh issue view ${{ github.event.issue.number }} --json title,body,labels,author
+
+            2. Lee las labels disponibles en el repo:
+               gh label list
+               Solo puedes usar labels de ese listado. No crees labels nuevas.
+
+            3. Si hace falta contexto para clasificar el issue (por ejemplo distinguir un bug de
+               una petición de feature), consulta CLAUDE.md y game.js en este repo.
+
+            4. Reescribe el body del issue con esta plantilla en Markdown. Omite las secciones
+               que queden vacías; no las rellenes con placeholders ni inventes contenido que el
+               autor no escribió:
+
+               <!-- claude-format:v1 -->
+
+               ## Resumen
+               Una o dos frases.
+
+               ## Contexto
+               Qué parte del juego afecta (tablero, piezas, scoring, render, controles).
+
+               ## Pasos para reproducir
+               1. ...
+
+               ## Comportamiento esperado vs. actual
+
+               ## Criterios de aceptación
+               - [ ] ...
+
+               <details>
+               <summary>Texto original del autor</summary>
+
+               ...texto crudo tal cual, sin modificar...
+
+               </details>
+
+            5. Reglas:
+               - Mantén el idioma del autor (por defecto español).
+               - No inventes pasos de reproducción, criterios de aceptación ni detalles técnicos
+                 que el autor no haya escrito.
+               - Si el body ya empieza con el marcador "<!-- claude-format:v1 -->", ya tiene el
+                 texto original preservado en el <details> existente: reutilízalo tal cual, no lo
+                 anides ni lo dupliques. Re-formatea el resto del contenido a partir de lo que el
+                 autor haya editado.
+               - No modifiques el título salvo que esté vacío o sea puramente ruido.
+               - Si el body ya cumple el formato y las labels ya son correctas, no hagas ningún
+                 cambio (no llames a gh issue edit).
+
+            6. Aplica el body actualizado:
+               gh issue edit ${{ github.event.issue.number }} --body "<nuevo body>"
+
+            7. Reconcilia las labels según el contenido del issue: agrega con --add-label las que
+               falten y quita con --remove-label las que ya no apliquen, usando solo las labels
+               del paso 2. No toques labels que no formen parte de ese set semántico (por ejemplo
+               labels de proceso puestas manualmente).
+               gh issue edit ${{ github.event.issue.number }} --add-label "..." --remove-label "..."
