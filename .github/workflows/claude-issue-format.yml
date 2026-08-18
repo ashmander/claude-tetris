@@ -30,7 +30,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh label list:*),Read,Glob,Grep"'
+          claude_args: '--allowedTools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh api:*),Bash(gh label list:*),Read,Glob,Grep"'
           prompt: |
             Estás formateando el issue #${{ github.event.issue.number }} del repositorio ${{ github.repository }}.
 
@@ -82,6 +82,8 @@ jobs:
                - No modifiques el título salvo que esté vacío o sea puramente ruido.
                - Si el body ya cumple el formato y las labels ya son correctas, no hagas ningún
                  cambio (no llames a gh issue edit).
+               - El diagnóstico técnico (pasos 8-10) NUNCA entra en el body del issue; vive
+                 solo en el comentario aparte descrito abajo.
 
             6. Aplica el body actualizado:
                gh issue edit ${{ github.event.issue.number }} --body "<nuevo body>"
@@ -91,3 +93,50 @@ jobs:
                del paso 2. No toques labels que no formen parte de ese set semántico (por ejemplo
                labels de proceso puestas manualmente).
                gh issue edit ${{ github.event.issue.number }} --add-label "..." --remove-label "..."
+
+            8. Diagnóstico técnico — investiga antes de escribirlo:
+               - Lee CLAUDE.md y game.js completo (son ~300 líneas, caben enteros) para entender
+                 la arquitectura (colisión, wall kicks, ciclo lockPiece → merge → clearLines →
+                 spawn, curva de velocidad). Si el issue toca render o layout, revisa también
+                 index.html y style.css.
+               - Usa Grep para localizar la función o sección exacta implicada en el problema
+                 descrito por el autor.
+               - Si el issue es una petición de feature sin defecto concreto, o no hay evidencia
+                 suficiente en el código para señalar una causa, omite el diagnóstico por completo:
+                 no publiques comentario, no inventes contenido de relleno. Pasa directo a haber
+                 terminado (no ejecutes los pasos 9-10).
+
+            9. Si hay diagnóstico, redáctalo en español (o el idioma del autor) con este formato
+               exacto, dejando el marcador HTML en la primera línea:
+
+               <!-- claude-diagnosis:v1 -->
+               ## Diagnóstico técnico
+
+               **Causa raíz probable** (hipótesis, sin verificar en ejecución)
+               Dónde vive el problema, con referencias `archivo:función` — p. ej. `game.js:collide`.
+
+               **Confianza:** alta | media | baja — y qué haría falta para subirla.
+
+               **Riesgos**
+               Qué se puede romper al tocar esa zona del código.
+
+               **Esfuerzo estimado:** trivial | pequeño | mediano | grande.
+
+               ---
+               *Diagnóstico automático. Hipótesis, no verificado en ejecución.*
+
+               Reglas para este comentario:
+               - No propongas parches ni escribas código; el objetivo es triar, no arreglar.
+               - No inventes causas ni archivos que no hayas verificado leyendo el código.
+
+            10. Publica el diagnóstico de forma idempotente (nunca crees un segundo comentario de
+                diagnóstico; si ya existe uno vigente y sigue siendo válido tras una edición del
+                autor, no lo reescribas):
+               a. Escribe el texto del paso 9 a un archivo temporal (evita problemas de escaping
+                  de markdown multilínea en la shell).
+               b. Busca un comentario existente con el marcador:
+                  gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments --jq '.[] | select(.body | startswith("<!-- claude-diagnosis:v1 -->")) | .id'
+               c. Si existe un id, actualízalo en su sitio:
+                  gh api -X PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=@<archivo>
+               d. Si no existe, crea el comentario:
+                  gh issue comment ${{ github.event.issue.number }} --body-file <archivo>
