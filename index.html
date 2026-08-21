@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tetris</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="records.css" />
 </head>
 <body>
   <div class="wrapper">
@@ -53,11 +54,36 @@
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
           <button id="restart-btn">Reiniciar</button>
+
+          <div id="gameover-records">
+            <span class="records-section-title">TOP 5</span>
+            <div id="gameover-records-table"></div>
+            <div id="gameover-best-stats" class="best-stats"></div>
+            <div id="save-record-form" class="hidden">
+              <input id="record-name-input" type="text" maxlength="12" placeholder="Tu nombre" />
+              <button id="save-record-btn" type="button">Guardar</button>
+            </div>
+            <button class="reset-records-btn" type="button">Resetear récords</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="start-screen" class="overlay">
+        <div class="start-box">
+          <p class="start-title">TETRIS</p>
+          <span class="records-section-title">TOP 5</span>
+          <div id="start-records-table"></div>
+          <div id="start-best-stats" class="best-stats"></div>
+          <div class="start-actions">
+            <button id="play-btn" type="button">JUGAR</button>
+            <button class="reset-records-btn" type="button">Resetear récords</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="records.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
