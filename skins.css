@@ -1,0 +1,42 @@
+/* Skin-specific board/panel adjustments. Hooks off html[data-skin="..."]. */
+
+#skin-select {
+  background: var(--kbd-bg);
+  color: var(--fg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---- Retro (default) ---- */
+html[data-skin="retro"] #board,
+html[data-skin="retro"] #next-canvas {
+  background: var(--board-bg);
+  border-color: var(--board-border);
+}
+
+/* ---- Neon ---- */
+html[data-skin="neon"] #board,
+html[data-skin="neon"] #next-canvas {
+  background: #060608;
+  border-color: #1a1a2a;
+  box-shadow: 0 0 24px rgba(0, 246, 255, 0.25);
+}
+
+/* ---- Pastel ---- */
+html[data-skin="pastel"] #board,
+html[data-skin="pastel"] #next-canvas {
+  background: #fdf6f0;
+  border-color: #e8d9e0;
+}
+
+/* ---- Pixel art ---- */
+html[data-skin="pixel"] #board,
+html[data-skin="pixel"] #next-canvas {
+  background: var(--board-bg);
+  border-color: var(--board-border);
+  image-rendering: pixelated;
+}

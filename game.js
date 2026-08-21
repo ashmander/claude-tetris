@@ -182,6 +182,13 @@ function updateHUD() {
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
+  // Delegate to the currently active skin's draw function (skins.js), which
+  // also resolves the color from its own palette. Fall back to the retro
+  // behavior with COLORS if skins.js hasn't loaded for some reason.
+  if (typeof getActiveSkin === 'function') {
+    getActiveSkin().drawBlock(context, x, y, colorIndex, size, alpha);
+    return;
+  }
   const color = COLORS[colorIndex];
   context.globalAlpha = alpha ?? 1;
   context.fillStyle = color;
