@@ -45,6 +45,7 @@ const themeToggleBtn = document.getElementById('theme-toggle');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 let gridLineColor;
+let combo, maxCombo;
 
 const THEME_KEY = 'tetris-theme';
 
@@ -132,7 +133,11 @@ function clearLines() {
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    combo++;
+    maxCombo = Math.max(maxCombo, combo);
     updateHUD();
+  } else {
+    combo = 0;
   }
 }
 
@@ -248,6 +253,9 @@ function endGame() {
   overlayTitle.textContent = 'GAME OVER';
   overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
+  if (typeof showGameOverRecords === 'function') {
+    showGameOverRecords(score, lines, maxCombo);
+  }
 }
 
 function togglePause() {
@@ -291,6 +299,8 @@ function init() {
   gameOver = false;
   dropInterval = 1000;
   dropAccum = 0;
+  combo = 0;
+  maxCombo = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
@@ -301,6 +311,7 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
+  if (!current) return; // game hasn't started yet (waiting on start screen)
   if (e.code === 'KeyP') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
@@ -329,4 +340,4 @@ restartBtn.addEventListener('click', init);
 themeToggleBtn.addEventListener('click', toggleTheme);
 
 initTheme();
-init();
+// init() is now triggered by the "JUGAR" button on the start screen (see records.js).
