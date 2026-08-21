@@ -254,13 +254,18 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    if (typeof closePauseMenu === 'function') closePauseMenu();
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    if (typeof openPauseMenu === 'function') {
+      openPauseMenu();
+    } else {
+      overlayTitle.textContent = 'PAUSA';
+      overlayScore.textContent = '';
+      overlay.classList.remove('hidden');
+    }
   }
 }
 
@@ -286,22 +291,29 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = (typeof getStartLevel === 'function' ? getStartLevel() : 1);
+  if (typeof setPauseMenuStartLevel === 'function') setPauseMenuStartLevel(level);
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (level - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  if (typeof closePauseMenu === 'function') closePauseMenu();
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (typeof isPauseMenuOpen === 'function' && isPauseMenuOpen()) {
+    if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); togglePause(); return; }
+    if (e.code === 'Space') e.preventDefault();
+    return;
+  }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
